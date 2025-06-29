@@ -15,11 +15,6 @@ on:
           - patch
           - minor
           - major
-      prerelease:
-        description: 'Create prerelease'
-        required: false
-        default: false
-        type: boolean
 
 env:
   GO_VERSION: '1.21'
@@ -30,159 +25,61 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+    outputs:
+      new-tag: ${{ steps.semver.outputs.next }}
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
       with:
         fetch-depth: 0
-        token: ${{ secrets.GITHUB_TOKEN }}
 
     - name: Set up Go
       uses: actions/setup-go@v4
       with:
         go-version: ${{ env.GO_VERSION }}
 
-    - name: Install semver tool
-      run: |
-        go install github.com/maykonlf/semver-cli/cmd/semver@latest
-
-    - name: Get latest tag
-      id: latest_tag
-      run: |
-        # Get the latest tag, default to v0.0.0 if no tags exist
-        LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
-        echo "LATEST_TAG=$LATEST_TAG" >> $GITHUB_OUTPUT
-        echo "Latest tag: $LATEST_TAG"
-
-    - name: Check if should create tag
-      id: should_tag
-      run: |
-        # For workflow_dispatch, always create tag
-        if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-          echo "SHOULD_TAG=true" >> $GITHUB_OUTPUT
-          echo "CREATE_TAG=true (manual trigger)" >> $GITHUB_STEP_SUMMARY
-          exit 0
-        fi
-
-        # For push to main, check commit messages for conventional commits
-        COMMITS=$(git log ${{ steps.latest_tag.outputs.LATEST_TAG }}..HEAD --oneline)
-        
-        if echo "$COMMITS" | grep -qE "^[a-f0-9]+ (feat|fix|perf|refactor)(\(.+\))?!?:"; then
-          echo "SHOULD_TAG=true" >> $GITHUB_OUTPUT
-          echo "CREATE_TAG=true (conventional commits found)" >> $GITHUB_STEP_SUMMARY
-          echo "Commits since last tag:"
-          echo "$COMMITS"
-        else
-          echo "SHOULD_TAG=false" >> $GITHUB_OUTPUT
-          echo "CREATE_TAG=false (no conventional commits)" >> $GITHUB_STEP_SUMMARY
-        fi
-
-    - name: Determine version bump
-      id: version_bump
-      if: steps.should_tag.outputs.SHOULD_TAG == 'true'
-      run: |
-        if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-          VERSION_TYPE="${{ github.event.inputs.version_type }}"
-        else
-          # Analyze commits to determine version bump
-          COMMITS=$(git log ${{ steps.latest_tag.outputs.LATEST_TAG }}..HEAD --oneline)
-          
-          if echo "$COMMITS" | grep -qE "^[a-f0-9]+ .+!:"; then
-            VERSION_TYPE="major"
-          elif echo "$COMMITS" | grep -qE "^[a-f0-9]+ feat(\(.+\))?:"; then
-            VERSION_TYPE="minor"
-          else
-            VERSION_TYPE="patch"
-          fi
-        fi
-        
-        echo "VERSION_TYPE=$VERSION_TYPE" >> $GITHUB_OUTPUT
-        echo "Version bump type: $VERSION_TYPE"
-
-    - name: Calculate new version
-      id: new_version
-      if: steps.should_tag.outputs.SHOULD_TAG == 'true'
-      run: |
-        CURRENT_VERSION="${{ steps.latest_tag.outputs.LATEST_TAG }}"
-        VERSION_TYPE="${{ steps.version_bump.outputs.VERSION_TYPE }}"
-        
-        # Remove 'v' prefix for semver calculation
-        CURRENT_VERSION_NO_V=${CURRENT_VERSION#v}
-        
-        # Calculate new version
-        NEW_VERSION=$(semver up $VERSION_TYPE $CURRENT_VERSION_NO_V)
-        
-        # Add prerelease suffix if requested
-        if [ "${{ github.event.inputs.prerelease }}" = "true" ]; then
-          NEW_VERSION="${NEW_VERSION}-rc.$(date +%Y%m%d%H%M%S)"
-        fi
-        
-        NEW_TAG="v$NEW_VERSION"
-        
-        echo "NEW_TAG=$NEW_TAG" >> $GITHUB_OUTPUT
-        echo "New tag: $NEW_TAG"
-
     - name: Run tests before tagging
-      if: steps.should_tag.outputs.SHOULD_TAG == 'true'
       run: |
         go mod download
         go test -v ./...
 
     - name: Build and verify
-      if: steps.should_tag.outputs.SHOULD_TAG == 'true'
       run: |
         make build
         ./build/mcp-manager --help
 
+    - name: Determine next version
+      id: semver
+      uses: ietf-tools/semver-action@v1
+      with:
+        token: ${{ github.token }}
+        branch: main
+        skipInvalidTags: true
+        noVersionBumpBehavior: 'silent'
+        majorList: 'BREAKING CHANGE,BREAKING-CHANGE'
+        minorList: 'feat,feature'
+        patchList: 'fix,bugfix,perf,refactor,test,tests,chore,docs,doc'
+        patchAll: false
+
     - name: Create and push tag
-      if: steps.should_tag.outputs.SHOULD_TAG == 'true'
+      if: steps.semver.outputs.next != ''
       run: |
-        NEW_TAG="${{ steps.new_version.outputs.NEW_TAG }}"
+        NEW_TAG="${{ steps.semver.outputs.next }}"
         
         # Configure git
         git config user.name "github-actions[bot]"
         git config user.email "github-actions[bot]@users.noreply.github.com"
         
-        # Create annotated tag with changelog
-        COMMITS=$(git log ${{ steps.latest_tag.outputs.LATEST_TAG }}..HEAD --pretty=format:"- %s (%h)")
+        # Get previous tag for changelog
+        PREV_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
         
-        git tag -a "$NEW_TAG" -m "Release $NEW_TAG
-
-Changes since ${{ steps.latest_tag.outputs.LATEST_TAG }}:
-$COMMITS"
-        
-        # Push the tag
+        # Create and push tag with simple message
+        git tag -a "$NEW_TAG" -m "Release $NEW_TAG"
         git push origin "$NEW_TAG"
         
         echo "✅ Created and pushed tag: $NEW_TAG" >> $GITHUB_STEP_SUMMARY
 
-    - name: Create release notes
-      if: steps.should_tag.outputs.SHOULD_TAG == 'true'
+    - name: No version bump
+      if: steps.semver.outputs.next == ''
       run: |
-        NEW_TAG="${{ steps.new_version.outputs.NEW_TAG }}"
-        
-        # Generate release notes
-        echo "# Release $NEW_TAG" > release_notes.md
-        echo "" >> release_notes.md
-        echo "## Changes" >> release_notes.md
-        git log ${{ steps.latest_tag.outputs.LATEST_TAG }}..HEAD --pretty=format:"- %s (%h)" >> release_notes.md
-        
-        echo "📝 Release notes created for $NEW_TAG" >> $GITHUB_STEP_SUMMARY
-
-  notify:
-    name: Notify
-    runs-on: ubuntu-latest
-    needs: auto-tag
-    if: always()
-    steps:
-    - name: Notify on success
-      if: needs.auto-tag.result == 'success'
-      run: |
-        echo "🎉 Auto-tagging workflow completed successfully!" >> $GITHUB_STEP_SUMMARY
-        echo "Check the release workflow for build and publish status." >> $GITHUB_STEP_SUMMARY
-
-    - name: Notify on failure
-      if: needs.auto-tag.result == 'failure'
-      run: |
-        echo "❌ Auto-tagging workflow failed!" >> $GITHUB_STEP_SUMMARY
-        echo "Please check the logs and fix any issues." >> $GITHUB_STEP_SUMMARY
+        echo "ℹ️ No version bump needed - no conventional commits found" >> $GITHUB_STEP_SUMMARY
