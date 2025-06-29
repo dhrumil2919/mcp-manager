@@ -42,8 +42,8 @@ defaults:
     
     # Default labels applied to all resources
     labels:
-      app.kubernetes.io/managed-by: mcp-manager
-      app.kubernetes.io/component: mcp-server
+      managed-by: mcp-manager
+      component: mcp-server
     
     # Default annotations
     annotations:
@@ -74,8 +74,8 @@ defaults:
     
     # Default labels applied to containers
     labels:
-      mcp-manager.managed-by: mcp-manager
-      mcp-manager.component: mcp-server
+      managed-by: mcp-manager
+      component: mcp-server
 
 # Example usage:
 # 

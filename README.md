@@ -241,10 +241,10 @@ defaults:
     memory_limit: 512Mi          # Default memory limit
     ingress_class: nginx         # Default ingress class
     
-    # Default labels
+    # Default labels (added to standard Kubernetes labels)
     labels:
-      app.kubernetes.io/managed-by: mcp-manager
-      app.kubernetes.io/component: mcp-server
+      environment: production
+      team: platform
 
   docker:
     image: ""                    # Default image (override with --image)
@@ -254,10 +254,10 @@ defaults:
     restart_policy: unless-stopped
     expose_ports: true           # Auto-expose ports to host
     
-    # Default labels
+    # Default labels (added to standard Docker labels)
     labels:
-      mcp-manager.managed-by: mcp-manager
-      mcp-manager.component: mcp-server
+      environment: production
+      team: platform
 ```
 
 ## Development

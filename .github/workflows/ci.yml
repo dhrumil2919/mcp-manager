@@ -91,12 +91,31 @@ jobs:
       with:
         fetch-depth: 0
 
+    - name: Check existing tags
+      run: |
+        echo "Existing tags:"
+        git tag -l | sort -V
+        echo "Latest tag:"
+        git describe --tags --abbrev=0 2>/dev/null || echo "No tags found"
+
+    - name: Get latest tag
+      id: latest_tag
+      run: |
+        # Get the latest tag with proper sorting
+        LATEST_TAG=$(git tag -l | grep -E '^v?[0-9]+\.[0-9]+\.[0-9]+' | sort -V | tail -1)
+        if [ -z "$LATEST_TAG" ]; then
+          LATEST_TAG="v0.0.0"
+        fi
+        echo "latest_tag=$LATEST_TAG" >> $GITHUB_OUTPUT
+        echo "Latest tag found: $LATEST_TAG"
+
     - name: Determine next version
       id: semver
       uses: ietf-tools/semver-action@v1
       with:
         token: ${{ github.token }}
         branch: main
+        fromTag: ${{ steps.latest_tag.outputs.latest_tag }}
         skipInvalidTags: true
         noVersionBumpBehavior: 'silent'
         majorList: 'BREAKING CHANGE,BREAKING-CHANGE'
@@ -108,6 +127,12 @@ jobs:
       if: steps.semver.outputs.next != ''
       run: |
         NEW_TAG="${{ steps.semver.outputs.next }}"
+
+        # Check if tag already exists
+        if git rev-parse "$NEW_TAG" >/dev/null 2>&1; then
+          echo "⚠️ Tag $NEW_TAG already exists, skipping tag creation" >> $GITHUB_STEP_SUMMARY
+          exit 0
+        fi
 
         # Configure git
         git config user.name "github-actions[bot]"
