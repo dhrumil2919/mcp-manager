@@ -61,6 +61,7 @@ func init() {
 	deployCmd.Flags().String("memory-limit", "", "Memory limit (uses config default if not specified)")
 	deployCmd.Flags().String("ingress-host", "", "Ingress host (uses config default if not specified)")
 	deployCmd.Flags().String("ingress-class", "", "Ingress class (uses config default if not specified)")
+	deployCmd.Flags().String("path", "/", "Ingress path (default: /)")
 	deployCmd.Flags().String("namespace", "", "Kubernetes namespace (overrides config)")
 
 	// Docker specific flags
@@ -137,6 +138,7 @@ type DeploymentConfig struct {
 	MemoryLimit   string
 	IngressHost   string
 	IngressClass  string
+	Path          string
 
 	// Docker specific
 	Network       string
@@ -172,7 +174,7 @@ func buildDeploymentConfig(cmd *cobra.Command, serverName, image, mode string) *
 
 	// Apply defaults and overrides for common settings
 	config.Port = getIntFlagOrDefault(cmd, "port", defaults, "port", 8000)
-	config.HealthPath = getStringFlagOrDefault(cmd, "health-path", defaults, "health_path", "/health")
+	config.HealthPath = getStringFlagOrDefault(cmd, "health-path", defaults, "health_path", "")
 	config.Command = getStringSliceFlagOrDefault(cmd, "command", defaults, "command")
 	config.Args = getStringSliceFlagOrDefault(cmd, "args", defaults, "args")
 	config.Environment, _ = cmd.Flags().GetStringToString("env")
@@ -189,6 +191,7 @@ func buildDeploymentConfig(cmd *cobra.Command, serverName, image, mode string) *
 		config.MemoryLimit = getStringFlagOrDefault(cmd, "memory-limit", defaults, "memory_limit", "512Mi")
 		config.IngressHost = getStringFlagOrDefault(cmd, "ingress-host", defaults, "ingress_host", "")
 		config.IngressClass = getStringFlagOrDefault(cmd, "ingress-class", defaults, "ingress_class", "nginx")
+		config.Path, _ = cmd.Flags().GetString("path")
 	} else {
 		config.Network = getStringFlagOrDefault(cmd, "network", defaults, "network", "mcp-network")
 		config.RestartPolicy = getStringFlagOrDefault(cmd, "restart-policy", defaults, "restart_policy", "unless-stopped")
@@ -262,7 +265,11 @@ func showDeploymentPlan(config *DeploymentConfig, mode string) error {
 	fmt.Printf("  Name: %s\n", config.Name)
 	fmt.Printf("  Image: %s\n", config.Image)
 	fmt.Printf("  Port: %d\n", config.Port)
-	fmt.Printf("  Health Path: %s\n", config.HealthPath)
+	if config.HealthPath != "" {
+		fmt.Printf("  Health Path: %s\n", config.HealthPath)
+	} else {
+		fmt.Printf("  Health Path: disabled\n")
+	}
 
 	if len(config.Command) > 0 {
 		fmt.Printf("  Command: %v\n", config.Command)
@@ -280,7 +287,11 @@ func showDeploymentPlan(config *DeploymentConfig, mode string) error {
 		fmt.Printf("  Resources: CPU(%s/%s) Memory(%s/%s)\n",
 			config.CPURequest, config.CPULimit, config.MemoryRequest, config.MemoryLimit)
 		if config.IngressHost != "" {
-			fmt.Printf("  Ingress: %s (class: %s)\n", config.IngressHost, config.IngressClass)
+			if config.Path != "/" {
+				fmt.Printf("  Ingress: %s%s (class: %s)\n", config.IngressHost, config.Path, config.IngressClass)
+			} else {
+				fmt.Printf("  Ingress: %s (class: %s)\n", config.IngressHost, config.IngressClass)
+			}
 		}
 	} else {
 		fmt.Printf("  Network: %s\n", config.Network)
@@ -321,6 +332,7 @@ func deployToKubernetes(config *DeploymentConfig) error {
 		MemoryLimit:   config.MemoryLimit,
 		IngressHost:   config.IngressHost,
 		IngressClass:  config.IngressClass,
+		Path:          config.Path,
 		Labels:        config.Labels,
 	}
 

@@ -164,6 +164,7 @@ type DeploymentConfig struct {
 	MemoryLimit   string
 	IngressHost   string
 	IngressClass  string
+	Path          string
 	Labels        map[string]string
 }
 
@@ -353,11 +354,9 @@ func (c *Client) createIngress(config *DeploymentConfig) error {
 			Name:      config.Name,
 			Namespace: config.Namespace,
 			Labels:    labels,
-			Annotations: map[string]string{
-				"kubernetes.io/ingress.class": config.IngressClass,
-			},
 		},
 		Spec: networkingv1.IngressSpec{
+			IngressClassName: &config.IngressClass,
 			Rules: []networkingv1.IngressRule{
 				{
 					Host: config.IngressHost,
@@ -365,7 +364,7 @@ func (c *Client) createIngress(config *DeploymentConfig) error {
 						HTTP: &networkingv1.HTTPIngressRuleValue{
 							Paths: []networkingv1.HTTPIngressPath{
 								{
-									Path:     "/",
+									Path:     config.Path,
 									PathType: &pathType,
 									Backend: networkingv1.IngressBackend{
 										Service: &networkingv1.IngressServiceBackend{

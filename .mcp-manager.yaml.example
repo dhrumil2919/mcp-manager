@@ -20,8 +20,8 @@ defaults:
     # Default container port
     port: 8000
     
-    # Default health check endpoint
-    health_path: /health
+    # Default health check endpoint (empty = no health checks)
+    health_path: ""
     
     # Default container command and args (optional)
     command: []

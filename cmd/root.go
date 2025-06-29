@@ -131,7 +131,7 @@ func initConfig() {
 	// Kubernetes defaults
 	viper.SetDefault("defaults.kubernetes.image", "")
 	viper.SetDefault("defaults.kubernetes.port", 8000)
-	viper.SetDefault("defaults.kubernetes.health_path", "/health")
+	viper.SetDefault("defaults.kubernetes.health_path", "")
 	viper.SetDefault("defaults.kubernetes.replicas", 1)
 	viper.SetDefault("defaults.kubernetes.cpu_request", "100m")
 	viper.SetDefault("defaults.kubernetes.cpu_limit", "500m")
@@ -142,7 +142,7 @@ func initConfig() {
 	// Docker defaults
 	viper.SetDefault("defaults.docker.image", "")
 	viper.SetDefault("defaults.docker.port", 8000)
-	viper.SetDefault("defaults.docker.health_path", "/health")
+	viper.SetDefault("defaults.docker.health_path", "")
 	viper.SetDefault("defaults.docker.network", "mcp-network")
 	viper.SetDefault("defaults.docker.restart_policy", "unless-stopped")
 	viper.SetDefault("defaults.docker.expose_ports", true)
