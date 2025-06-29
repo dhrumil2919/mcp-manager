@@ -1,5 +1,9 @@
 # MCP Manager CLI
 
+[![CI](https://github.com/your-org/mcp-manager/workflows/CI/badge.svg)](https://github.com/your-org/mcp-manager/actions/workflows/ci.yml)
+[![Release](https://github.com/your-org/mcp-manager/workflows/Release/badge.svg)](https://github.com/your-org/mcp-manager/actions/workflows/release.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
 A powerful command-line tool for managing Model Context Protocol (MCP) servers across Kubernetes and Docker environments. Built in Go for high performance and simplicity.
 
 > **🚀 New to MCP Manager?** Check out our [Getting Started Guide](GETTING_STARTED.md) for a quick 5-minute setup!

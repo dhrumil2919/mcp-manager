@@ -14,7 +14,7 @@ GOARCH?=$(shell go env GOARCH)
 GO_VERSION?=$(shell go version | cut -d' ' -f3)
 
 # Build flags
-LDFLAGS=-ldflags "-X main.Version=$(VERSION) -X main.Commit=$(COMMIT) -X main.BuildTime=$(BUILD_TIME)"
+LDFLAGS=-ldflags "-X main.Version=$(VERSION) -X main.Commit=$(COMMIT) -X main.BuildTime=$(BUILD_TIME) -s -w"
 
 # Colors for output
 RED=\033[0;31m
