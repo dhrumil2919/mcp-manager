@@ -1,0 +1,100 @@
+# MCP Manager Configuration File
+# Copy this to ~/.mcp-manager.yaml or ./.mcp-manager.yaml and customize
+
+# Default deployment mode: "kubernetes" or "docker"
+default_mode: kubernetes
+
+# Kubernetes configuration
+kube_config: ~/.kube/config  # Path to kubeconfig file
+kube_namespace: default      # Default namespace for deployments
+
+# Docker configuration  
+docker_host: unix:///var/run/docker.sock  # Docker daemon socket
+
+# Default configurations for deployments
+defaults:
+  kubernetes:
+    # Default Docker image (can be overridden per deployment)
+    image: ""
+    
+    # Default container port
+    port: 8000
+    
+    # Default health check endpoint
+    health_path: /health
+    
+    # Default container command and args (optional)
+    command: []
+    args: []
+    
+    # Default replica count
+    replicas: 1
+    
+    # Default resource requests and limits
+    cpu_request: 100m
+    cpu_limit: 500m
+    memory_request: 128Mi
+    memory_limit: 512Mi
+    
+    # Ingress configuration
+    ingress_host: ""           # Default host pattern (e.g., "*.example.com")
+    ingress_class: nginx       # Default ingress class
+    
+    # Default labels applied to all resources
+    labels:
+      app.kubernetes.io/managed-by: mcp-manager
+      app.kubernetes.io/component: mcp-server
+    
+    # Default annotations
+    annotations:
+      mcp-manager/created-by: mcp-manager-cli
+
+  docker:
+    # Default Docker image (can be overridden per deployment)
+    image: ""
+    
+    # Default container port
+    port: 8000
+    
+    # Default health check endpoint
+    health_path: /health
+    
+    # Default container command and args (optional)
+    command: []
+    args: []
+    
+    # Default Docker network
+    network: mcp-network
+    
+    # Default restart policy
+    restart_policy: unless-stopped
+    
+    # Whether to automatically expose ports to host
+    expose_ports: true
+    
+    # Default labels applied to containers
+    labels:
+      mcp-manager.managed-by: mcp-manager
+      mcp-manager.component: mcp-server
+
+# Example usage:
+# 
+# Deploy with defaults:
+#   mcp-manager deploy my-server --image my-mcp-server:latest
+#
+# Deploy with overrides:
+#   mcp-manager deploy my-server \
+#     --image my-mcp-server:latest \
+#     --port 9000 \
+#     --replicas 3 \
+#     --cpu-limit 1000m \
+#     --memory-limit 1Gi
+#
+# List servers with health:
+#   mcp-manager list --health
+#
+# Check specific server health:
+#   mcp-manager health my-server
+#
+# View logs:
+#   mcp-manager logs my-server --follow

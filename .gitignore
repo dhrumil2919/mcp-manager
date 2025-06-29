@@ -1,0 +1,131 @@
+# Go binaries for programs and plugins
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Test binary, built with `go test -c`
+*.test
+
+# Output of the go coverage tool, specifically when used with LiteIDE
+*.out
+
+# Dependency directories (remove the comment below to include it)
+# vendor/
+
+# Go workspace file
+go.work
+
+# Build directory
+build/
+dist/
+
+# Binary files
+mcp-manager
+mcp-manager-*
+
+# Test coverage files
+coverage.out
+coverage.html
+coverage.xml
+
+# Temporary files
+tmp/
+temp/
+
+# Release archives
+*.tar.gz
+*.zip
+
+# Log files
+*.log
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# Configuration files (keep examples)
+.mcp-manager.yaml
+!.mcp-manager.yaml.example
+
+# Local development files
+local/
+dev/
+
+# Backup files
+*.bak
+*.backup
+
+# Cache directories
+.cache/
+.go-cache/
+
+# Profiling files
+*.prof
+*.pprof
+
+# Memory dumps
+*.hprof
+
+# Fuzz testing
+fuzz/
+
+# Air (live reload) temporary files
+tmp/
+
+# GoReleaser
+dist/
+goreleaser.yml
+
+# Certificates and keys
+*.pem
+*.key
+*.crt
+*.p12
+*.pfx
+
+# Secrets
+secrets/
+.secrets/
+
+# Local scripts
+scripts/local/
+
+# IDE specific
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS specific
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Docker
+.dockerignore
+
+# Kubernetes
+*.kubeconfig
+
+# Local environment files
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Backup files
+*.bak
+*.backup
+*.sql
+
+# Temporary files
+*.tmp
+*.temp
